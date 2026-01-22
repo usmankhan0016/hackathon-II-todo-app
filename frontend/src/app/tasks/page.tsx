@@ -6,6 +6,9 @@ import Link from 'next/link';
 import { useAuthStore } from '@/stores/authStore';
 import { apiClient, type Task } from '@/lib/api';
 
+type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled';
+type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
+
 export default function TasksPage() {
   const router = useRouter();
   const { isAuthenticated, logout, checkAuth } = useAuthStore();
@@ -14,7 +17,19 @@ export default function TasksPage() {
   const [error, setError] = useState('');
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskDescription, setNewTaskDescription] = useState('');
   const [filter, setFilter] = useState<'all' | 'pending' | 'in_progress' | 'completed'>('all');
+
+  // Edit modal state
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editStatus, setEditStatus] = useState<TaskStatus>('pending');
+  const [editPriority, setEditPriority] = useState<TaskPriority>('medium');
+  const [isEditSubmitting, setIsEditSubmitting] = useState(false);
+
+  // Delete confirmation state
+  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -56,11 +71,13 @@ export default function TasksPage() {
     try {
       const newTask = await apiClient.createTask({
         title: newTaskTitle,
+        description: newTaskDescription || undefined,
         status: 'pending',
         priority: 'medium',
       });
       setTasks([newTask, ...tasks]);
       setNewTaskTitle('');
+      setNewTaskDescription('');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to create task';
       setError(message);
@@ -80,14 +97,55 @@ export default function TasksPage() {
     }
   };
 
-  const handleDeleteTask = async (taskId: string) => {
+  const handleDeleteTask = async (task: Task) => {
+    setTaskToDelete(task);
+  };
+
+  const confirmDeleteTask = async () => {
+    if (!taskToDelete) return;
+
     try {
-      await apiClient.deleteTask(taskId);
-      setTasks(tasks.filter((t) => t.id !== taskId));
+      await apiClient.deleteTask(taskToDelete.id);
+      setTasks(tasks.filter((t) => t.id !== taskToDelete.id));
+      setTaskToDelete(null);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to delete task';
       setError(message);
     }
+  };
+
+  const handleEditTask = (task: Task) => {
+    setEditingTask(task);
+    setEditTitle(task.title);
+    setEditDescription(task.description || '');
+    setEditStatus(task.status as TaskStatus);
+    setEditPriority(task.priority as TaskPriority);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingTask || !editTitle.trim()) return;
+
+    setIsEditSubmitting(true);
+    try {
+      const updated = await apiClient.patchTask(editingTask.id, {
+        title: editTitle,
+        description: editDescription || undefined,
+        status: editStatus,
+        priority: editPriority,
+      });
+
+      setTasks(tasks.map((t) => (t.id === editingTask.id ? updated : t)));
+      setEditingTask(null);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to update task';
+      setError(message);
+    } finally {
+      setIsEditSubmitting(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingTask(null);
   };
 
   const handleLogout = () => {
@@ -162,15 +220,31 @@ export default function TasksPage() {
             <div className="card sticky top-8">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Add New Task</h2>
               <form onSubmit={handleAddTask} className="space-y-3">
-                <input
-                  type="text"
-                  value={newTaskTitle}
-                  onChange={(e) => setNewTaskTitle(e.target.value)}
-                  placeholder="What do you need to do?"
-                  className="input-base"
-                  disabled={isAddingTask}
-                  required
-                />
+                <div>
+                  <input
+                    type="text"
+                    value={newTaskTitle}
+                    onChange={(e) => setNewTaskTitle(e.target.value)}
+                    placeholder="What do you need to do?"
+                    className="input-base"
+                    disabled={isAddingTask}
+                    required
+                  />
+                </div>
+                <div>
+                  <textarea
+                    value={newTaskDescription}
+                    onChange={(e) => setNewTaskDescription(e.target.value)}
+                    placeholder="Add task details (optional)"
+                    className="input-base resize-none"
+                    rows={3}
+                    disabled={isAddingTask}
+                    maxLength={5000}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {newTaskDescription.length} / 5000 characters
+                  </p>
+                </div>
                 <button
                   type="submit"
                   disabled={isAddingTask || !newTaskTitle.trim()}
@@ -242,19 +316,157 @@ export default function TasksPage() {
                         )}
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleDeleteTask(task.id)}
-                      className="p-2 text-gray-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-all"
-                      title="Delete task"
-                    >
-                      X
-                    </button>
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                      <button
+                        onClick={() => handleEditTask(task)}
+                        className="p-2 text-gray-400 hover:text-blue-600"
+                        title="Edit task"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        onClick={() => handleDeleteTask(task)}
+                        className="p-2 text-gray-400 hover:text-red-600"
+                        title="Delete task"
+                      >
+                        X
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
             )}
           </div>
         </div>
+
+        {/* Delete Confirmation Modal */}
+        {taskToDelete && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-sm w-full">
+              <div className="p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-2">Delete Task?</h2>
+                <p className="text-gray-600 mb-6">
+                  Are you sure you want to delete <span className="font-semibold">"{taskToDelete.title}"</span>? This cannot be undone.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setTaskToDelete(null)}
+                    className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmDeleteTask}
+                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Task Modal */}
+        {editingTask && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+              <div className="p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">Edit Task</h2>
+
+                <div className="space-y-4">
+                  {/* Title Field */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Title
+                    </label>
+                    <input
+                      type="text"
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      className="input-base"
+                      placeholder="Task title"
+                      disabled={isEditSubmitting}
+                    />
+                  </div>
+
+                  {/* Description Field */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Description
+                    </label>
+                    <textarea
+                      value={editDescription}
+                      onChange={(e) => setEditDescription(e.target.value)}
+                      className="input-base resize-none"
+                      placeholder="Add task details"
+                      rows={3}
+                      disabled={isEditSubmitting}
+                      maxLength={5000}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      {editDescription.length} / 5000 characters
+                    </p>
+                  </div>
+
+                  {/* Status Dropdown */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Status
+                    </label>
+                    <select
+                      value={editStatus}
+                      onChange={(e) => setEditStatus(e.target.value as TaskStatus)}
+                      className="input-base"
+                      disabled={isEditSubmitting}
+                    >
+                      <option value="pending">Pending</option>
+                      <option value="in_progress">In Progress</option>
+                      <option value="completed">Completed</option>
+                      <option value="cancelled">Cancelled</option>
+                    </select>
+                  </div>
+
+                  {/* Priority Dropdown */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Priority
+                    </label>
+                    <select
+                      value={editPriority}
+                      onChange={(e) => setEditPriority(e.target.value as TaskPriority)}
+                      className="input-base"
+                      disabled={isEditSubmitting}
+                    >
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                      <option value="urgent">Urgent</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Buttons */}
+                <div className="flex gap-3 mt-6">
+                  <button
+                    onClick={handleCancelEdit}
+                    disabled={isEditSubmitting}
+                    className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveEdit}
+                    disabled={isEditSubmitting || !editTitle.trim()}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isEditSubmitting ? 'Saving...' : 'Save'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
