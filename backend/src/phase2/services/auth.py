@@ -47,11 +47,11 @@ class AuthService:
             WeakPasswordError: If password is too short or too long
             EmailExistsError: If email is already registered
         """
-        # Validate password strength (8-72 chars, bcrypt limit)
+        # Validate password strength (8-512 chars for argon2)
         if len(request.password) < 8:
             raise WeakPasswordError()
-        if len(request.password) > 72:
-            raise WeakPasswordError()  # Will be caught and converted to proper error
+        if len(request.password) > 512:
+            raise WeakPasswordError()
 
         # Hash password
         password_hash = hash_password(request.password)

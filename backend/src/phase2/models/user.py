@@ -1,21 +1,22 @@
 """
 User model for authentication system.
-Includes password hashing utilities using bcrypt.
+Includes password hashing utilities using argon2-cffi.
 """
 
 from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID, uuid4
 
-from passlib.context import CryptContext
+from argon2 import PasswordHasher
+from argon2.exceptions import InvalidHash, VerifyMismatchError
 from sqlalchemy import DateTime
 from sqlmodel import Column, Field, Relationship, SQLModel, String
 
 if TYPE_CHECKING:
     from .task import Task
 
-# Password hashing context (bcrypt with cost factor 12)
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__rounds=12)
+# Password hasher (argon2 with secure defaults)
+pwd_hasher = PasswordHasher()
 
 
 class User(SQLModel, table=True):
@@ -25,7 +26,7 @@ class User(SQLModel, table=True):
     Fields:
         id: Unique user identifier (UUID)
         email: User email address (unique, indexed)
-        password_hash: Bcrypt hashed password
+        password_hash: Argon2 hashed password
         name: User's display name (optional)
         created_at: Account creation timestamp
         updated_at: Last update timestamp
@@ -103,20 +104,20 @@ class User(SQLModel, table=True):
 
 def hash_password(password: str) -> str:
     """
-    Hash a password using bcrypt.
+    Hash a password using argon2.
 
     Args:
         password: Plain text password
 
     Returns:
-        str: Bcrypt hashed password
+        str: Argon2 hashed password
 
     Example:
         >>> hashed = hash_password("mypassword123")
-        >>> hashed.startswith("$2b$")
+        >>> hashed.startswith("$argon2")
         True
     """
-    return pwd_context.hash(password)
+    return pwd_hasher.hash(password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -125,7 +126,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
     Args:
         plain_password: Plain text password to verify
-        hashed_password: Bcrypt hash to verify against
+        hashed_password: Argon2 hash to verify against
 
     Returns:
         bool: True if password matches, False otherwise
@@ -137,4 +138,8 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         >>> verify_password("wrongpassword", hashed)
         False
     """
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        pwd_hasher.verify(hashed_password, plain_password)
+        return True
+    except (VerifyMismatchError, InvalidHash):
+        return False
