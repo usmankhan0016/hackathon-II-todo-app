@@ -38,7 +38,7 @@ interface SigninRequest {
 }
 
 interface Task {
-  id: string;
+  id: number;
   user_id: string;
   title: string;
   description?: string;
@@ -242,7 +242,7 @@ class ApiClient {
     return response.json();
   }
 
-  async getTask(taskId: string): Promise<Task> {
+  async getTask(taskId: number): Promise<Task> {
     const response = await this.fetch(`/api/tasks/${taskId}`);
 
     if (!response.ok) {
@@ -269,7 +269,7 @@ class ApiClient {
     return response.json();
   }
 
-  async updateTask(taskId: string, data: TaskUpdateRequest): Promise<Task> {
+  async updateTask(taskId: number, data: TaskUpdateRequest): Promise<Task> {
     const response = await this.fetch(`/api/tasks/${taskId}`, {
       method: 'PUT',
       body: JSON.stringify(data),
@@ -283,7 +283,7 @@ class ApiClient {
     return response.json();
   }
 
-  async patchTask(taskId: string, data: Partial<TaskUpdateRequest>): Promise<Task> {
+  async patchTask(taskId: number, data: Partial<TaskUpdateRequest>): Promise<Task> {
     const response = await this.fetch(`/api/tasks/${taskId}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
@@ -297,7 +297,7 @@ class ApiClient {
     return response.json();
   }
 
-  async deleteTask(taskId: string): Promise<void> {
+  async deleteTask(taskId: number): Promise<void> {
     const response = await this.fetch(`/api/tasks/${taskId}`, {
       method: 'DELETE',
     });

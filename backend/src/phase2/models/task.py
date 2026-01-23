@@ -6,7 +6,6 @@ Composite indexes for efficient user-scoped queries.
 from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING, List, Optional
-from uuid import UUID, uuid4
 
 from sqlalchemy import ARRAY, Column, DateTime, Index, String
 from sqlalchemy import Enum as SAEnum
@@ -51,8 +50,8 @@ class Task(SQLModel, table=True):
         Index('idx_tasks_user_due', 'user_id', 'due_date'),
     )
 
-    id: UUID = Field(
-        default_factory=uuid4,
+    id: Optional[int] = Field(
+        default=None,
         primary_key=True,
         index=True,
         nullable=False,
