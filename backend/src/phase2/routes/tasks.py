@@ -116,7 +116,7 @@ async def create_task(
 
 @router.get("/{task_id}", response_model=TaskResponse)
 async def get_task(
-    task_id: UUID,
+    task_id: int,
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
@@ -145,7 +145,7 @@ async def get_task(
 
 @router.put("/{task_id}", response_model=TaskResponse)
 async def update_task(
-    task_id: UUID,
+    task_id: int,
     task_in: TaskCreate,  # Full update requires all fields
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
@@ -168,7 +168,7 @@ async def update_task(
 
 @router.patch("/{task_id}", response_model=TaskResponse)
 async def patch_task(
-    task_id: UUID,
+    task_id: int,
     task_in: TaskUpdate,  # Partial update
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
@@ -192,7 +192,7 @@ async def patch_task(
 
 @router.delete("/{task_id}", status_code=204)
 async def delete_task(
-    task_id: UUID,
+    task_id: int,
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
