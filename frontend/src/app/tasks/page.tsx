@@ -60,6 +60,8 @@ export default function TasksPage() {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load tasks';
       setError(message);
+      // Auto-dismiss error after 5 seconds
+      setTimeout(() => setError(''), 5000);
     } finally {
       setIsLoading(false);
     }
@@ -84,6 +86,8 @@ export default function TasksPage() {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to create task';
       setError(message);
+      // Auto-dismiss error after 5 seconds
+      setTimeout(() => setError(''), 5000);
     } finally {
       setIsAddingTask(false);
     }
@@ -98,6 +102,7 @@ export default function TasksPage() {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to update task';
       setError(message);
+      setTimeout(() => setError(''), 5000);
     }
   };
 
@@ -116,6 +121,8 @@ export default function TasksPage() {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to delete task';
       setError(message);
+      // Auto-dismiss error after 5 seconds
+      setTimeout(() => setError(''), 5000);
     }
   };
 
@@ -145,6 +152,7 @@ export default function TasksPage() {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to update task';
       setError(message);
+      setTimeout(() => setError(''), 5000);
     } finally {
       setIsEditSubmitting(false);
     }
