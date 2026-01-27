@@ -70,6 +70,7 @@ export default function TasksPage() {
     if (!newTaskTitle.trim()) return;
 
     setIsAddingTask(true);
+    setError('');
     try {
       const newTask = await apiClient.createTask({
         title: newTaskTitle,
@@ -90,6 +91,7 @@ export default function TasksPage() {
 
   const handleToggleTask = async (task: Task) => {
     const newStatus = task.status === 'completed' ? 'pending' : 'completed';
+    setError('');
     try {
       const updated = await apiClient.patchTask(task.id, { status: newStatus });
       setTasks(tasks.map((t) => (t.id === task.id ? updated : t)));
@@ -106,6 +108,7 @@ export default function TasksPage() {
   const confirmDeleteTask = async () => {
     if (!taskToDelete) return;
 
+    setError('');
     try {
       await apiClient.deleteTask(taskToDelete.id);
       setTasks(tasks.filter((t) => t.id !== taskToDelete.id));
@@ -128,6 +131,7 @@ export default function TasksPage() {
     if (!editingTask || !editTitle.trim()) return;
 
     setIsEditSubmitting(true);
+    setError('');
     try {
       const updated = await apiClient.patchTask(editingTask.id, {
         title: editTitle,
