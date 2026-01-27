@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field
 
 
 # Error Codes (machine-readable for logging)
@@ -37,7 +37,7 @@ class SignupRequest(BaseModel):
         name: Optional display name
     """
 
-    email: EmailStr = Field(
+    email: str = Field(
         ...,
         description="User email address",
         examples=["user@example.com"]
@@ -78,7 +78,7 @@ class SigninRequest(BaseModel):
         password: User password
     """
 
-    email: EmailStr = Field(
+    email: str = Field(
         ...,
         description="User email address",
         examples=["user@example.com"]

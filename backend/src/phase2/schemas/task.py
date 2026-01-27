@@ -43,7 +43,7 @@ class TaskUpdate(BaseModel):
 
 class TaskResponse(TaskBase):
     """Model for task responses - includes ID and timestamps."""
-    id: UUID
+    id: int
     user_id: UUID
     created_at: datetime
     updated_at: datetime

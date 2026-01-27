@@ -42,8 +42,10 @@ export default function TasksPage() {
   }, [isAuthenticated, router]);
 
   useEffect(() => {
-    loadTasks();
-  }, [filter]);
+    if (isAuthenticated) {
+      loadTasks();
+    }
+  }, [filter, isAuthenticated]);
 
   const loadTasks = async () => {
     setIsLoading(true);
@@ -189,7 +191,15 @@ export default function TasksPage() {
   };
 
   if (!isAuthenticated && typeof window !== 'undefined') {
-    return null;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="container">
+          <div className="text-center">
+            <p className="text-xl text-gray-600 mb-4">Redirecting...</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
