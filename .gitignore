@@ -30,7 +30,14 @@ MANIFEST
 venv/
 ENV/
 env/
+
+# Environment files (NEVER commit secrets)
 .env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # Testing
 .pytest_cache/
@@ -63,3 +70,12 @@ Thumbs.db
 
 # MCP configuration (contains secrets)
 .mcp.json
+
+# Frontend
+node_modules/
+.next/
+dist/
+*.pid
+
+# Generated files
+*.lock

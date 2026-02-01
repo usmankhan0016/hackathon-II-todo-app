@@ -2,6 +2,8 @@
 Database connection module for Phase 2 Authentication System.
 Handles SQLModel session management, connection pooling, and health checks.
 """
+
+import logging
 from typing import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
@@ -13,6 +15,9 @@ from .models import User, Task  # Import all models for metadata registration
 
 # Get settings
 settings = get_settings()
+
+# Logging setup
+logger = logging.getLogger(__name__)
 
 # Convert postgresql:// to postgresql+asyncpg:// for async support
 # Remove sslmode parameter as asyncpg uses different SSL config
@@ -94,7 +99,7 @@ async def check_db_health() -> bool:
             await session.execute("SELECT 1")
             return True
     except Exception as e:
-        print(f"Database health check failed: {e}")
+        logger.error(f"Database health check failed: {e}")
         return False
 
 

@@ -3,6 +3,7 @@ FastAPI Application - Phase 2: Authentication System
 Main application entry point with CORS, error handlers, and middleware setup.
 """
 
+import logging
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -25,37 +26,44 @@ from .models import User, Task  # noqa: F401 - models must be imported before ta
 # Configuration
 settings = get_settings()
 
+# Logging setup
+logging.basicConfig(
+    level=settings.LOG_LEVEL,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
+
 # Lifespan context manager for startup/shutdown events
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> Any:
     """Handle startup and shutdown events."""
     # Startup
-    print("🚀 Starting Todo App Backend - Phase 2: Authentication System")
-    print(f"🔧 Environment: {settings.ENVIRONMENT}")
-    print(f"🗄️  Database: {settings.DATABASE_URL[:50]}...")
+    logger.info("Starting Todo App Backend - Phase 2: Authentication System")
+    logger.info(f"Environment: {settings.ENVIRONMENT}")
+    logger.info(f"Database: {settings.DATABASE_URL[:50]}...")
 
     # Initialize database tables
-    print("📊 Initializing database tables...")
+    logger.info("Initializing database tables...")
     try:
         await init_db()
-        print("✅ Database tables initialized successfully")
+        logger.info("Database tables initialized successfully")
 
         # Check database health
         is_healthy = await check_db_health()
         if is_healthy:
-            print("✅ Database connection healthy")
+            logger.info("Database connection healthy")
         else:
-            print("⚠️  Database connection check failed")
+            logger.warning("Database connection check failed")
     except Exception as e:
-        print(f"❌ Database initialization failed: {e}")
+        logger.error(f"Database initialization failed: {e}")
         raise
 
     yield
 
     # Shutdown
-    print("🛑 Shutting down Todo App Backend")
+    logger.info("Shutting down Todo App Backend")
     await close_db()
-    print("✅ Database connections closed")
+    logger.info("Database connections closed")
 
 
 # Initialize FastAPI application
@@ -77,7 +85,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-print(f"🔓 CORS Enabled for all origins")
+logger.info("CORS Enabled for all origins")
 
 # Register error handlers
 app.add_exception_handler(AuthError, auth_error_handler)

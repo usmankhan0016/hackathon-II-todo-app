@@ -1,0 +1,15 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="100" cy="100" r="100" fill="#0B0F0E"/>
+
+  <!-- Outer ring -->
+  <circle cx="100" cy="100" r="95" fill="none" stroke="#00E676" stroke-width="2"/>
+
+  <!-- Check mark -->
+  <g stroke="#00E676" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- Left part of checkmark -->
+    <path d="M 60 100 L 85 125"/>
+    <!-- Right part of checkmark -->
+    <path d="M 85 125 L 140 70"/>
+  </g>
+</svg>

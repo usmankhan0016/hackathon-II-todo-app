@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..database import get_db
 from ..middleware.auth import get_current_user_id
 from ..models.task import Task, TaskPriority, TaskStatus
-from ..schemas.task import ErrorDetail, PaginatedResponse, TaskCreate, TaskResponse, TaskUpdate
+from ..schemas.task import PaginatedResponse, TaskCreate, TaskResponse, TaskUpdate
 
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
@@ -23,8 +23,8 @@ router = APIRouter(prefix="/tasks", tags=["Tasks"])
 async def list_tasks(
     page: int = Query(default=1, ge=1),
     limit: int = Query(default=20, ge=1, le=100),
-    status: Optional[TaskStatus] = Query(default=None),
-    priority: Optional[TaskPriority] = Query(default=None),
+    status: Optional[str] = Query(default=None),
+    priority: Optional[str] = Query(default=None),
     sort: str = Query(default="created_at:desc"),
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
@@ -41,12 +41,42 @@ async def list_tasks(
     """
     user_uuid = UUID(user_id)
 
+    # Convert string status/priority to enums (case-insensitive)
+    status_enum: Optional[TaskStatus] = None
+    priority_enum: Optional[TaskPriority] = None
+
+    if status:
+        try:
+            status_enum = TaskStatus(status.lower())
+        except ValueError:
+            raise HTTPException(
+                400,
+                detail={
+                    "error": "INVALID_STATUS",
+                    "message": f"Invalid status: {status}. Must be one of: pending, in_progress, completed, cancelled",
+                    "status_code": 400
+                }
+            )
+
+    if priority:
+        try:
+            priority_enum = TaskPriority(priority.lower())
+        except ValueError:
+            raise HTTPException(
+                400,
+                detail={
+                    "error": "INVALID_PRIORITY",
+                    "message": f"Invalid priority: {priority}. Must be one of: low, medium, high, urgent",
+                    "status_code": 400
+                }
+            )
+
     # Build where clause
     where_clauses = [Task.user_id == user_uuid]
-    if status:
-        where_clauses.append(Task.status == status)
-    if priority:
-        where_clauses.append(Task.priority == priority)
+    if status_enum:
+        where_clauses.append(Task.status == status_enum)
+    if priority_enum:
+        where_clauses.append(Task.priority == priority_enum)
 
     # Count total
     total_stmt = select(func.count(Task.id)).where(and_(*where_clauses))
@@ -68,11 +98,11 @@ async def list_tasks(
         if field not in allowed_fields:
             raise HTTPException(
                 400,
-                detail=ErrorDetail(
-                    error="INVALID_SORT_FIELD",
-                    message=f"Invalid sort field: {field}",
-                    status_code=400
-                )
+                detail={
+                    "error": "INVALID_SORT_FIELD",
+                    "message": f"Invalid sort field: {field}",
+                    "status_code": 400
+                }
             )
 
         if direction == 'desc':
@@ -125,20 +155,20 @@ async def get_task(
     if not task:
         raise HTTPException(
             status_code=404,
-            detail=ErrorDetail(
-                error="TASK_NOT_FOUND",
-                message="Task not found",
-                status_code=404
-            )
+            detail={
+                "error": "TASK_NOT_FOUND",
+                "message": "Task not found",
+                "status_code": 404
+            }
         )
     if task.user_id != UUID(user_id):
         raise HTTPException(
             status_code=403,
-            detail=ErrorDetail(
-                error="TASK_NOT_AUTHORIZED",
-                message="Not authorized to access this task",
-                status_code=403
-            )
+            detail={
+                "error": "TASK_NOT_AUTHORIZED",
+                "message": "Not authorized to access this task",
+                "status_code": 403
+            }
         )
     return TaskResponse.model_validate(task)
 

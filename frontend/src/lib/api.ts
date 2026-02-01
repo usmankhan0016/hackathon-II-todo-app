@@ -164,10 +164,15 @@ class ApiClient {
       headers['Authorization'] = `Bearer ${this.accessToken}`;
     }
 
-    let response = await fetch(`${this.baseURL}${endpoint}`, {
-      ...options,
-      headers,
-    });
+    let response: Response;
+    try {
+      response = await fetch(`${this.baseURL}${endpoint}`, {
+        ...options,
+        headers,
+      });
+    } catch (networkError) {
+      throw networkError;
+    }
 
     if (response.status === 401 && this.refreshToken) {
       const refreshed = await this.refreshAccessToken();
